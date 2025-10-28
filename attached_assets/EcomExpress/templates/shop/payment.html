@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment - E-Commerce Store{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="mb-4">Complete Payment</h1>
+    
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Order #{{ order.id }}</h4>
+                    <p>Total Amount: <strong class="text-primary">₹{{ total }}</strong></p>
+                    <button id="rzp-button" class="btn btn-success btn-lg w-100">Pay Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "{{ razorpay_key_id }}",
+    "amount": "{{ amount }}",
+    "currency": "INR",
+    "name": "E-Commerce Store",
+    "description": "Order #{{ order.id }}",
+    "order_id": "{{ razorpay_order_id }}",
+    "handler": function (response){
+        fetch("{% url 'payment_success' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = "{% url 'order_confirmation' order.id %}";
+            }
+        });
+    },
+    "theme": {
+        "color": "#3399cc"
+    }
+};
+
+var rzp = new Razorpay(options);
+document.getElementById('rzp-button').onclick = function(e){
+    rzp.open();
+    e.preventDefault();
+}
+</script>
+{% endblock %}
